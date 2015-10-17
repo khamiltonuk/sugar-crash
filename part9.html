@@ -210,6 +210,7 @@ function addEnemy(){
 function update() {
 
     //  Collide the player and the stars with the platforms
+	game.physics.arcade.collide(player_fat, player)
     game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(player_fat, platforms);
     game.physics.arcade.collide(stars, platforms);
@@ -330,7 +331,7 @@ function collectStar (player, star) {
     star.kill();
     hit.play();
 
-	
+
 	if (star.key === "carrot" && player.body.gravity.y === 300) {
 		carrotCount += 1;
 	}
