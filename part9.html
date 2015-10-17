@@ -7,6 +7,9 @@
     <style type="text/css">
         body {
             margin: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
         }
     </style>
 </head>
@@ -21,6 +24,7 @@ function preload() {
     game.load.image('sky', 'assets/sky.png');
     game.load.image('ground', 'assets/platform.png');
     game.load.image('star', 'assets/star.png');
+	game.load.image('carrot', 'assets/carrot.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
     game.load.audio('boden', ['assets/audio/bodenstaendig_2000_in_rock_4bit.mp3', 'assets/audio/bodenstaendig_2000_in_rock_4bit.ogg']);
 
@@ -31,6 +35,7 @@ var platforms;
 var cursors;
 
 var stars;
+var carrots;
 var score = 0;
 var score_fat = 0;
 var scoreText;
@@ -103,9 +108,13 @@ function create() {
 
     //  Finally some stars to collect
     stars = game.add.group();
+	//  We will enable physics for any star that is created in this group
+	stars.enableBody = true;
 
-    //  We will enable physics for any star that is created in this group
-    stars.enableBody = true;
+	//  Finally some carrots to collect
+	carrots = game.add.group();
+	//  We will enable physics for any star that is created in this group
+	carrots.enableBody = true;
 
     //  Here we'll create 12 of them evenly spaced apart
     for (var i = 0; i < 12; i++)
@@ -119,6 +128,18 @@ function create() {
         //  This just gives each star a slightly random bounce value
         star.body.bounce.y = 0.7 + Math.random() * 0.2;
     }
+
+	for (var i = 0; i < 4; i++)
+	{
+		//  Create a star inside of the 'carrots' group
+		var carrot = carrots.create(i * 70, 0, 'carrot');
+
+		//  Let gravity do its thing
+		carrot.body.gravity.y = 300;
+
+		//  This just gives each star a slightly random bounce value
+		carrot.body.bounce.y = 0.7 + Math.random() * 0.2;
+	}
 
     //  The score
     scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
@@ -143,10 +164,15 @@ function update() {
     game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(player_fat, platforms);
     game.physics.arcade.collide(stars, platforms);
+	game.physics.arcade.collide(carrots, platforms);
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
     game.physics.arcade.overlap(player_fat, stars, collectStar, null, this);
+
+	//  Checks to see if the player overlaps with any of the carrots,
+	game.physics.arcade.overlap(player, carrots, collectCarrot, null, this);
+    game.physics.arcade.overlap(player_fat, carrots, collectCarrot, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -197,29 +223,37 @@ function update() {
 
 }
 
+function collectCarrot(player, carrot) {
+	carrot.kill();
+
+	carrotCount += 1;
+	carrotCount_fat += 1;
+	if (player.body.gravity.y == 300) {
+		if (carrotCount < 6) {
+			game.add.sprite(carrotPosition, 50, 'carrot');
+			carrotPosition = carrotPosition  + 26;
+		}
+	}else {
+		if (carrotCount_fat < 6) {
+			game.add.sprite(carrotPosition_fat, 50, 'carrot');
+			carrotPosition_fat = carrotPosition_fat - 26;
+		}
+	}
+
+
+
+}
 function collectStar (player, star) {
 
     // Removes the star from the screen
     star.kill();
 
-	carrotCount += 1;
-	carrotCount_fat += 1;
-
-
     if (player.body.gravity.y == 300) {
 		score += 10;
 		scoreText.text = 'Score: ' + score;
-		if (carrotCount < 6) {
-			game.add.sprite(carrotPosition, 50, 'star');
-			carrotPosition = carrotPosition  + 26;
-		}
     } else {
 		score_fat += 10;
 		scoreTextFat.text = 'Score: ' + score_fat;
-		if (carrotCount_fat < 6) {
-			game.add.sprite(carrotPosition_fat, 50, 'star');
-			carrotPosition_fat = carrotPosition_fat - 26;
-		}
     }
 
 
