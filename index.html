@@ -37,9 +37,13 @@ function preload() {
 
     game.load.image('good', 'assets/images/good.png');
     game.load.image('bad', 'assets/images/bad.png');
-    game.load.audio('boden', ['assets/audio/bodenstaendig_2000_in_rock_4bit.mp3', 'assets/audio/bodenstaendig_2000_in_rock_4bit.ogg']);
+	//**************
+	//** Audio
+	//**************
+	//game.load.audio('boden', ['assets/audio/bodenstaendig_2000_in_rock_4bit.mp3', 'assets/audio/bodenstaendig_2000_in_rock_4bit.ogg']);
     game.load.audio('jump', ['assets/audio/jump.mp3']);
     game.load.audio('hit', ['assets/audio/hit.mp3']);
+	game.load.audio('excuseMePlease', ['assets/audio/excusemeplease.mp3']);
 
 }
 
@@ -59,6 +63,7 @@ var player,
 	score_double,
 	score_double_fat,
 	tween,
+	seconds,
 	scoreText,
 	carrotCount = 0,
 	carrotPosition = 16,
@@ -72,10 +77,9 @@ var player,
 	healthy = ["carrot", "strawberry", "broccoli"],
 	unhealthy_ar = ["burger", "pizza", "coke"],
 	timer,
-	milliseconds = 0,
 	seconds = 0,
-	minutes = 0,
-	textStyle = { fontSize: '32px', fill: '#000' };
+	textStyle = { fontSize: '32px', fill: '#000' },
+	excusePlease = false;
 
 function create() {
 
@@ -102,10 +106,13 @@ function create() {
     //  The platforms group contains the ground and the 2 ledges we can jump on
     platforms = game.add.group();
 
-    music = game.add.audio('boden');
+	//Background music
+    //music = game.add.audio('boden');
+	//music.play();
     jump = game.add.audio('jump');
     hit = game.add.audio('hit');
-    music.play();
+	excuseMePlease = game.add.audio('excuseMePlease');
+
 
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
@@ -174,7 +181,7 @@ function create() {
     scoreTextFat = game.add.text(650, 16, 'Score: 0', textStyle);
 
 	//Add timer to the game
-	//timer = game.add.bitmapText(250, 250, '00:00:00', textStyle);
+	timer = game.add.text(16, 550, '00', textStyle);
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
 
@@ -218,11 +225,16 @@ function addEnemy(){
 	enemy.checkWorldBounds = true;
 	enemy.outOfBoundsKill = true;
 }
+function playersBump(){
+	if (excusePlease === false){
+		excuseMePlease.play();
+	}
+}
 
 function update() {
 
     //  Collide the player and the stars with the platforms
-	game.physics.arcade.collide(player_fat, player)
+	game.physics.arcade.collide(player_fat, player, playersBump, null, this)
     game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(player_fat, platforms);
     game.physics.arcade.collide(stars, platforms);
@@ -240,6 +252,8 @@ function update() {
     player_fat.body.velocity.x = 0;
 
     score_double = score*2;
+
+	game.time.events.loop(Phaser.Timer.SECOND, updateTimer);
 
     if (cursors.left.isDown) {
         //  Move to the left
@@ -299,6 +313,12 @@ function touchesSugar(player, sugar) {
 	sugar.kill();
 }
 
+function updateTimer() {
+	    seconds -= 1;
+
+    timer.setText( seconds);
+}
+
 function createFood() {
 
   var rand = Math.floor(Math.random() * 3) + 1;
@@ -332,6 +352,7 @@ function collectStar (player, star) {
     // Removes the star from the screen
     star.kill();
     hit.play();
+
 
 
 	if (star.key === "carrot" && player.body.gravity.y === 300) {
