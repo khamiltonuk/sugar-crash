@@ -24,6 +24,7 @@ function preload() {
     game.load.image('sky', 'assets/sky.png');
     game.load.image('ground', 'assets/platform.png');
     game.load.image('star', 'assets/star.png');
+	game.load.image('enemy', 'assets/enemy.png');
 	game.load.image('carrot', 'assets/carrot.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
 
@@ -45,9 +46,14 @@ function preload() {
 var player;
 var platforms;
 var cursors;
+var enemies;
 
 var stars;
+
 var unhealthy;
+
+var timer;
+var carrots;
 var score = 0;
 var score_fat = 0;
 var scoreText;
@@ -150,7 +156,9 @@ function create() {
     stars.enableBody = true;
     unhealthy.enableBody = true;
 
+
     createFood();
+
 
     //  The score
     scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
@@ -167,6 +175,36 @@ function create() {
         right: game.input.keyboard.addKey(Phaser.Keyboard.D),
     };
 
+	// Creat an enemy group with arcade physics
+	this.enemies = game.add.group();
+	this.enemies.enableBody = true;
+
+	//create 10 enemies with 'enemy' image in the group
+	//The enemies are 'dead' by default, so they are not visible in the game
+	this.enemies.createMultiple(10, 'enemy');
+
+	//call 'addEnemy' every 2.2 seconds
+	game.time.events.loop(2200, addEnemy, this);
+
+}
+
+function addEnemy(){
+	//get the first dead enemy of the group
+	var enemy = this.enemies.getFirstDead();
+
+	//if there isn't any dead enemy, do nothing
+	if(!enemy) {
+		return;
+	}
+
+	//initialise the enemy
+	enemy.anchor.setTo(0.5,1);
+	enemy.reset(game.world.centerX, 0);
+	enemy.body.gravity.y = 500;
+	enemy.body.velocity.x = 100 * Phaser.Math.randomSign();
+	enemy.body.bounce.x = 1;
+	enemy.checkWorldBounds = true;
+	enemy.outOfBoundsKill = true;
 }
 
 function update() {
@@ -176,6 +214,7 @@ function update() {
     game.physics.arcade.collide(player_fat, platforms);
     game.physics.arcade.collide(stars, platforms);
     game.physics.arcade.collide(unhealthy, platforms);
+	game.physics.arcade.collide(this.enemies, platforms);
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
@@ -236,6 +275,15 @@ function update() {
         jump.play();
     }
 
+	// Call the 'playerDie' function when the player and an enemy overlap
+	game.physics.arcade.overlap(player, this.enemies, touchesSugar,
+	null, this);
+	game.physics.arcade.overlap(player_fat, this.enemies, touchesSugar,
+	null, this);
+}
+
+function touchesSugar(player, sugar) {
+	sugar.kill();
 }
 
 function createFood() {
@@ -263,7 +311,6 @@ function VisualFeedback(type) {
 }
 
 function bringItBack(type) {
-  console.log(type);
   type.alpha = 0;
   type.y = 100;
 }
@@ -276,17 +323,21 @@ function collectCarrot(player, carrot) {
 
 	}
 
-
-
 }
 function collectStar (player, star) {
 
     // Removes the star from the screen
     star.kill();
     hit.play();
-	star.
-	carrotCount += 1;
-	carrotCount_fat += 1;
+
+	
+	if (star.key === "carrot" && player.body.gravity.y === 300) {
+		carrotCount += 1;
+	}
+	if (star.key === "carrot" && player.body.gravity.y != 300) {
+		carrotCount_fat += 1;
+	}
+
 
     if (player.body.gravity.y == 300) {
 		score += 10;
