@@ -1,6 +1,6 @@
-<!doctype html> 
-<html lang="en"> 
-<head> 
+<!doctype html>
+<html lang="en">
+<head>
 	<meta charset="UTF-8" />
     <title>Phaser - Making your first game, part 9</title>
 	<script type="text/javascript" src="js/phaser.min.js"></script>
@@ -32,6 +32,8 @@ var cursors;
 var stars;
 var score = 0;
 var scoreText;
+var carrotCount = 0;
+var carrotPosition = 16;
 
 function create() {
 
@@ -102,7 +104,7 @@ function create() {
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
-    
+
 }
 
 function update() {
@@ -138,7 +140,7 @@ function update() {
 
         player.frame = 4;
     }
-    
+
     //  Allow the player to jump if they are touching the ground.
     if (cursors.up.isDown && player.body.touching.down)
     {
@@ -148,9 +150,17 @@ function update() {
 }
 
 function collectStar (player, star) {
-    
+
     // Removes the star from the screen
     star.kill();
+
+	carrotCount += 1;
+	if (carrotCount < 6) {
+		game.add.sprite(carrotPosition, 50, 'star');
+		carrotPosition = carrotPosition  + 26;
+	}
+
+
 
     //  Add and update the score
     score += 10;
