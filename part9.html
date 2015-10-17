@@ -26,7 +26,19 @@ function preload() {
     game.load.image('star', 'assets/star.png');
 	game.load.image('carrot', 'assets/carrot.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+
+    game.load.image('carrot', 'assets/carrot.png');
+    game.load.image('strawberry', 'assets/strawberry.png');
+    game.load.image('broccoli', 'assets/broccoli.png');
+    game.load.image('burger', 'assets/burger.png');
+    game.load.image('pizza', 'assets/pizza.png');
+    game.load.image('coke', 'assets/coke.png');
+
+    game.load.image('good', 'assets/good.png');
+    game.load.image('bad', 'assets/bad.png');
     game.load.audio('boden', ['assets/audio/bodenstaendig_2000_in_rock_4bit.mp3', 'assets/audio/bodenstaendig_2000_in_rock_4bit.ogg']);
+    game.load.audio('jump', ['assets/jump.mp3']);
+    game.load.audio('hit', ['assets/hit.mp3']);
 
 }
 
@@ -35,7 +47,7 @@ var platforms;
 var cursors;
 
 var stars;
-var carrots;
+var unhealthy;
 var score = 0;
 var score_fat = 0;
 var scoreText;
@@ -44,19 +56,40 @@ var carrotPosition = 16;
 var carrotCount_fat = 0;
 var carrotPosition_fat = 750 - 16;
 var scoreTextFat;
+var good;
+var good_fat;
+var bad;
+var bad_fat;
+var healthy = ["carrot", "strawberry", "broccoli"];
+var unhealthy_ar = ["burger", "pizza", "coke"];
 
 function create() {
 
     //  We're going to be using physics, so enable the Arcade Physics system
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
+    game.time.events.repeat(Phaser.Timer.SECOND * (Math.floor(Math.random() * 10) + 6), 10, createFood, this);
+
     //  A simple background for our game
     game.add.sprite(0, 0, 'sky');
+    good = game.add.sprite(16, 100, 'good');
+    good.alpha = 0;
+
+    good_fat = game.add.sprite(655, 100, 'good');
+    good_fat.alpha = 0;
+
+    bad = game.add.sprite(16, 100, 'bad');
+    bad.alpha = 0;
+
+    bad_fat = game.add.sprite(655, 100, 'bad');
+    bad_fat.alpha = 0;
 
     //  The platforms group contains the ground and the 2 ledges we can jump on
     platforms = game.add.group();
 
     music = game.add.audio('boden');
+    jump = game.add.audio('jump');
+    hit = game.add.audio('hit');
     music.play();
 
     //  We will enable physics for any object that is created in this group
@@ -95,8 +128,6 @@ function create() {
     player_fat.body.gravity.y = 301;
     player_fat.body.collideWorldBounds = true;
 
-
-
     //  Our two animations, walking left and right.
     player.animations.add('left', [0, 1, 2, 3], 10, true);
     player.animations.add('right', [5, 6, 7, 8], 10, true);
@@ -111,39 +142,19 @@ function create() {
 	//  We will enable physics for any star that is created in this group
 	stars.enableBody = true;
 
-	//  Finally some carrots to collect
-	carrots = game.add.group();
-	//  We will enable physics for any star that is created in this group
-	carrots.enableBody = true;
+    //  Finally some stars to collect
+    stars = game.add.group();
+    unhealthy = game.add.group();
 
-    //  Here we'll create 12 of them evenly spaced apart
-    for (var i = 0; i < 12; i++)
-    {
-        //  Create a star inside of the 'stars' group
-        var star = stars.create(i * 70, 0, 'star');
+    //  We will enable physics for any star that is created in this group
+    stars.enableBody = true;
+    unhealthy.enableBody = true;
 
-        //  Let gravity do its thing
-        star.body.gravity.y = 300;
-
-        //  This just gives each star a slightly random bounce value
-        star.body.bounce.y = 0.7 + Math.random() * 0.2;
-    }
-
-	for (var i = 0; i < 4; i++)
-	{
-		//  Create a star inside of the 'carrots' group
-		var carrot = carrots.create(i * 70, 0, 'carrot');
-
-		//  Let gravity do its thing
-		carrot.body.gravity.y = 300;
-
-		//  This just gives each star a slightly random bounce value
-		carrot.body.bounce.y = 0.7 + Math.random() * 0.2;
-	}
+    createFood();
 
     //  The score
-    scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
-    scoreTextFat = game.add.text(650, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+    scoreTextFat = game.add.text(650, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
@@ -164,28 +175,28 @@ function update() {
     game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(player_fat, platforms);
     game.physics.arcade.collide(stars, platforms);
-	game.physics.arcade.collide(carrots, platforms);
+    game.physics.arcade.collide(unhealthy, platforms);
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
     game.physics.arcade.overlap(player_fat, stars, collectStar, null, this);
-
-	//  Checks to see if the player overlaps with any of the carrots,
-	game.physics.arcade.overlap(player, carrots, collectCarrot, null, this);
-    game.physics.arcade.overlap(player_fat, carrots, collectCarrot, null, this);
+    game.physics.arcade.overlap(player, unhealthy, collectUnhealthy, null, this);
+    game.physics.arcade.overlap(player_fat, unhealthy, collectUnhealthy, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
     player_fat.body.velocity.x = 0;
 
+    score_double = score*2;
+
     if (cursors.left.isDown) {
         //  Move to the left
-        player.body.velocity.x = -150;
+        player.body.velocity.x = -150 - score_double;
         player.animations.play('left');
     }
     else if (cursors.right.isDown) {
         //  Move to the right
-        player.body.velocity.x = 150;
+        player.body.velocity.x = 150 + score_double;
         player.animations.play('right');
     }
     else {
@@ -196,19 +207,22 @@ function update() {
 
     //  Allow the player to jump if they are touching the ground.
     if (cursors.up.isDown && player.body.touching.down) {
-        player.body.velocity.y = -350;
+        player.body.velocity.y = -350 - score_double;
+        jump.play();
     }
 
     // WASD controls
 
+    score_double_fat = score_fat*2;
+
     if (wasd.left.isDown) {
         //  Move to the left
-        player_fat.body.velocity.x = -150;
+        player_fat.body.velocity.x = -150 - score_double_fat;
         player_fat.animations.play('left');
     }
     else if (wasd.right.isDown) {
         //  Move to the right
-        player_fat.body.velocity.x = 150;
+        player_fat.body.velocity.x = 150 + score_double_fat;
         player_fat.animations.play('right');
     }
     else {
@@ -218,26 +232,48 @@ function update() {
     }
     //  Allow the player to jump if they are touching the ground.
     if (wasd.up.isDown && player_fat.body.touching.down) {
-        player_fat.body.velocity.y = -350;
+        player_fat.body.velocity.y = -350 - score_double_fat;
+        jump.play();
     }
 
 }
 
-function collectCarrot(player, carrot) {
-	carrot.kill();
+function createFood() {
 
-	carrotCount += 1;
-	carrotCount_fat += 1;
+  var rand = Math.floor(Math.random() * 3) + 1;
+    for (var i = 0; i < rand; i++)
+    {
+        //  Create a star inside of the 'stars' group
+        var star = stars.create(Math.floor(Math.random() * 700) + 50, 0, healthy[Math.floor(Math.random() * 3)]);
+        var unhealthy_food = unhealthy.create(Math.floor(Math.random() * 700) + 50, 0, unhealthy_ar[Math.floor(Math.random() * 3)]);
+
+        //  Let gravity do its thing
+        star.body.gravity.y = 300;
+        unhealthy_food.body.gravity.y = 300;
+
+        //  This just gives each star a slightly random bounce value
+        star.body.bounce.y = 0.7 + Math.random() * 0.2;
+        unhealthy_food.body.bounce.y = 0.7 + Math.random() * 0.2;
+    }
+}
+
+function VisualFeedback(type) {
+  tween = game.add.tween(type).to( { alpha: 1, y: 16 }, 500, Phaser.Easing.Linear.None, true, 0, 0, false);
+  tween.onComplete.add(bringItBack, this)
+}
+
+function bringItBack(type) {
+  console.log(type);
+  type.alpha = 0;
+  type.y = 100;
+}
+
+function collectCarrot(player, carrot) {
+
 	if (player.body.gravity.y == 300) {
-		if (carrotCount < 6) {
-			game.add.sprite(carrotPosition, 50, 'carrot');
-			carrotPosition = carrotPosition  + 26;
-		}
+
 	}else {
-		if (carrotCount_fat < 6) {
-			game.add.sprite(carrotPosition_fat, 50, 'carrot');
-			carrotPosition_fat = carrotPosition_fat - 26;
-		}
+
 	}
 
 
@@ -247,16 +283,45 @@ function collectStar (player, star) {
 
     // Removes the star from the screen
     star.kill();
+    hit.play();
+	star.
+	carrotCount += 1;
+	carrotCount_fat += 1;
 
     if (player.body.gravity.y == 300) {
 		score += 10;
 		scoreText.text = 'Score: ' + score;
+		VisualFeedback(good);
+		if (carrotCount < 6) {
+			game.add.sprite(carrotPosition, 50, 'carrot');
+			carrotPosition = carrotPosition  + 26;
+		}
     } else {
-		score_fat += 10;
-		scoreTextFat.text = 'Score: ' + score_fat;
+      score_fat += 10;
+      scoreTextFat.text = 'Score: ' + score_fat;
+      VisualFeedback(good_fat);
+	  if (carrotCount_fat < 6) {
+		  game.add.sprite(carrotPosition_fat, 50, 'carrot');
+		  carrotPosition_fat = carrotPosition_fat - 26;
+	  }
     }
+}
 
+function collectUnhealthy (player, unhealthy_food) {
 
+    // Removes the star from the screen
+    unhealthy_food.kill();
+    hit.play();
+
+    if (player.body.gravity.y == 300) {
+      score -= 10;
+      scoreText.text = 'Score: ' + score;
+      VisualFeedback(bad);
+    } else {
+      score_fat -= 10;
+      scoreTextFat.text = 'Score: ' + score_fat;
+      VisualFeedback(bad_fat);
+    }
 }
 
 </script>
