@@ -16,60 +16,69 @@
 <body>
 
 <script type="text/javascript">
+//http://phaser.io/tutorials/making-your-first-phaser-game
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
 function preload() {
 
-    game.load.image('sky', 'assets/sky.png');
-    game.load.image('ground', 'assets/platform.png');
-    game.load.image('star', 'assets/star.png');
-	game.load.image('enemy', 'assets/enemy.png');
-	game.load.image('carrot', 'assets/carrot.png');
-    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+    game.load.image('sky', 'assets/images/sky.png');
+    game.load.image('ground', 'assets/images/platform.png');
+	game.load.image('enemy', 'assets/images/enemy.png');
+	game.load.image('carrot', 'assets/images/carrot.png');
+    game.load.spritesheet('dude', 'assets/images/dude.png', 32, 48);
 
-    game.load.image('carrot', 'assets/carrot.png');
-    game.load.image('strawberry', 'assets/strawberry.png');
-    game.load.image('broccoli', 'assets/broccoli.png');
-    game.load.image('burger', 'assets/burger.png');
-    game.load.image('pizza', 'assets/pizza.png');
-    game.load.image('coke', 'assets/coke.png');
+    game.load.image('carrot', 'assets/images/carrot.png');
+    game.load.image('strawberry', 'assets/images/strawberry.png');
+    game.load.image('broccoli', 'assets/images/broccoli.png');
+    game.load.image('burger', 'assets/images/burger.png');
+    game.load.image('pizza', 'assets/images/pizza.png');
+    game.load.image('coke', 'assets/images/coke.png');
 
-    game.load.image('good', 'assets/good.png');
-    game.load.image('bad', 'assets/bad.png');
+    game.load.image('good', 'assets/images/good.png');
+    game.load.image('bad', 'assets/images/bad.png');
     game.load.audio('boden', ['assets/audio/bodenstaendig_2000_in_rock_4bit.mp3', 'assets/audio/bodenstaendig_2000_in_rock_4bit.ogg']);
-    game.load.audio('jump', ['assets/jump.mp3']);
-    game.load.audio('hit', ['assets/hit.mp3']);
+    game.load.audio('jump', ['assets/audio/jump.mp3']);
+    game.load.audio('hit', ['assets/audio/hit.mp3']);
 
 }
 
-var player;
-var platforms;
-var cursors;
-var enemies;
-
-var stars;
-
-var unhealthy;
-
-var timer;
-var carrots;
-var score = 0;
-var score_fat = 0;
-var scoreText;
-var carrotCount = 0;
-var carrotPosition = 16;
-var carrotCount_fat = 0;
-var carrotPosition_fat = 750 - 16;
-var scoreTextFat;
-var good;
-var good_fat;
-var bad;
-var bad_fat;
-var healthy = ["carrot", "strawberry", "broccoli"];
-var unhealthy_ar = ["burger", "pizza", "coke"];
+var player,
+	platforms,
+	cursors,
+	enemies,
+	stars,
+	music,
+	jump,
+	hit,
+	player_fat,
+	unhealthy,
+	timer,
+	score = 0,
+	score_fat = 0,
+	score_double,
+	score_double_fat,
+	tween,
+	scoreText,
+	carrotCount = 0,
+	carrotPosition = 16,
+	carrotCount_fat = 0,
+	carrotPosition_fat = 750 - 16,
+	scoreTextFat,
+	good,
+	good_fat,
+	bad,
+	bad_fat,
+	healthy = ["carrot", "strawberry", "broccoli"],
+	unhealthy_ar = ["burger", "pizza", "coke"],
+	timer,
+	milliseconds = 0,
+	seconds = 0,
+	minutes = 0,
+	textStyle = { fontSize: '32px', fill: '#000' };
 
 function create() {
+
 
     //  We're going to be using physics, so enable the Arcade Physics system
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -161,9 +170,11 @@ function create() {
 
 
     //  The score
-    scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
-    scoreTextFat = game.add.text(650, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+    scoreText = game.add.text(16, 16, 'Score: 0', textStyle);
+    scoreTextFat = game.add.text(650, 16, 'Score: 0', textStyle);
 
+	//Add timer to the game
+	//timer = game.add.bitmapText(250, 250, '00:00:00', textStyle);
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
 
@@ -187,6 +198,7 @@ function create() {
 	game.time.events.loop(2200, addEnemy, this);
 
 }
+
 
 function addEnemy(){
 	//get the first dead enemy of the group
@@ -308,7 +320,7 @@ function createFood() {
 
 function VisualFeedback(type) {
   tween = game.add.tween(type).to( { alpha: 1, y: 16 }, 500, Phaser.Easing.Linear.None, true, 0, 0, false);
-  tween.onComplete.add(bringItBack, this)
+  tween.onComplete.add(bringItBack, this);
 }
 
 function bringItBack(type) {
@@ -316,17 +328,7 @@ function bringItBack(type) {
   type.y = 100;
 }
 
-function collectCarrot(player, carrot) {
-
-	if (player.body.gravity.y == 300) {
-
-	}else {
-
-	}
-
-}
 function collectStar (player, star) {
-
     // Removes the star from the screen
     star.kill();
     hit.play();
@@ -334,9 +336,17 @@ function collectStar (player, star) {
 
 	if (star.key === "carrot" && player.body.gravity.y === 300) {
 		carrotCount += 1;
+		if (carrotCount < 6) {
+			game.add.sprite(carrotPosition, 50, 'carrot');
+			carrotPosition = carrotPosition  + 26;
+		}
 	}
 	if (star.key === "carrot" && player.body.gravity.y != 300) {
 		carrotCount_fat += 1;
+		if (carrotCount_fat < 6) {
+  		  game.add.sprite(carrotPosition_fat, 50, 'carrot');
+  		  carrotPosition_fat = carrotPosition_fat - 26;
+  	  }
 	}
 
 
@@ -344,18 +354,11 @@ function collectStar (player, star) {
 		score += 10;
 		scoreText.text = 'Score: ' + score;
 		VisualFeedback(good);
-		if (carrotCount < 6) {
-			game.add.sprite(carrotPosition, 50, 'carrot');
-			carrotPosition = carrotPosition  + 26;
-		}
+
     } else {
       score_fat += 10;
       scoreTextFat.text = 'Score: ' + score_fat;
       VisualFeedback(good_fat);
-	  if (carrotCount_fat < 6) {
-		  game.add.sprite(carrotPosition_fat, 50, 'carrot');
-		  carrotPosition_fat = carrotPosition_fat - 26;
-	  }
     }
 }
 
